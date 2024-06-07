@@ -4,7 +4,7 @@ author: "Henri Gerard Gabert Hidalgo"
 date: "2024-06-07"
 output: html_document
 ---
-## Impotación de paquetes
+## Importación de paquetes
 ```{r}
 library(readr)
 library(tidyverse)
@@ -148,5 +148,6 @@ corrplot(correlation_matrix, method = 'color', order = 'FPC', type = 'lower', di
          cl.cex = 0.8, # Tamaño de la leyenda de colores
          number.cex = 0.7) # Tamaño de los números de correlación
 ```
+
 Una vez más realizamos las correlaciones para observar si con las dos nuevas columnas tiene una relación más fuerte como lo es la lineal o solo existe dependencia pero no lineal entre ellas y esto ultimo fue lo concluido.
 
