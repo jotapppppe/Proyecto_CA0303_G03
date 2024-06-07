@@ -1,0 +1,230 @@
+---
+title: "Método delta"
+author: Juan Pablo Morgan
+date: "2024-06-07"
+output: 
+  rmdformats::downcute:
+    default_style: "dark"
+    downcute_theme: "chaos"
+  html_document:
+  extra_dependencies: ['amsmath', 'someotherpackage']
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## Librerias
+
+```{r message=FALSE}
+library(propagate)
+library(car)
+library(readr)
+library(dplyr)
+library(MASS)
+library(nortest)
+```
+
+## Lectura de la base de datos
+
+```{r message=FALSE, warning=FALSE}
+Data_HeartDiseases <- read_csv("heart_disease_health_indicators_BRFSS2015.csv")
+```
+
+## Método Delta.
+
+Este caso es con la variable HighCol, Diabetes y GenHlth.
+
+```{r}
+# Variables predictorias.
+X_1 <- Data_HeartDiseases$HighChol
+X_2 <- Data_HeartDiseases$Diabetes
+X_3 <- Data_HeartDiseases$GenHlth
+
+# Numero de la muestra.
+n <- nrow(Data_HeartDiseases)
+
+# Variable a predecir.
+y <- Data_HeartDiseases$HeartDiseaseorAttack
+
+# Coeficiente de correlación de cada una de las Xn respecto a y.
+r_n.1 <- cor(X_1, y)
+r_n.2 <- cor(X_2, y)
+r_n.3 <- cor(X_3, y)
+
+```
+
+El método delta se define como:
+
+$$
+\frac{\sqrt n[g (r_n) - g(\rho)]}{g'(\rho) (1-\rho^2)} \rightarrow N(0,1)
+$$ 
+
+Con $g(\rho)$ aún desconocida.
+
+Entonces, para encontrar dicha función, tenemos:
+
+$$
+g'(\rho) \cdot (1-\rho^{2}) = 1
+$$ Es decir, que tenemos despejando:
+
+$$
+g(\rho) = \int \frac{1}{1-\rho^{2}}d\rho = arctanh(\rho)
+$$
+
+Por lo tanto, se define a la función g de forma tal que:
+
+```{r}
+# se define la función g(θ) tal que: g(θ) = arctanh(θ)
+g <- function(x) atanh(x)
+```
+
+Utilizando la función g encontrada anteriormente, tenemos entonces: 
+$$
+  \frac{\sqrt n[arctanh(r_n) - arctanh(\rho)]}{arctanh'(\rho){(1-\rho^2)}} \rightarrow N(0,1)
+$$
+
+Donde vea que el denominador se cancela debido a que son el mismo valor.
+
+Por lo tanto, observe que tenemos: 
+$$
+  -z_{1-\frac{\alpha}{2}} < \sqrt n[arctanh(r_n) - arctanh(\rho)] < z_{1-\frac{\alpha}{2}}
+$$ 
+
+## Intervalos de Confianza. {.tabset}
+
+Por lo tanto, tenemos, que el intervalo debe ser: 
+$$
+  tanh(arctanh(r_n) - \frac{z_{1-\frac{\alpha}{2}}}{\sqrt n}) < \rho < tanh(arctanh(r_n) + \frac{z_{1-\frac{\alpha}{2}}}{\sqrt n})
+$$ 
+
+Donde sabemos que $\alpha = 0.05$, entonces los cuantiles son de la
+siguiente forma:
+
+```{r}
+alpha <- 0.05
+quantil <- qnorm(1-alpha / 2)
+```
+
+Entonces, calculamos cada extremo de los intervalos de confianza.
+
+```{r}
+q1.1 <- tanh(g(r_n.1) - (quantil/sqrt(n-3)))
+q2.1 <- tanh(g(r_n.1) + (quantil/sqrt(n-3)))
+cuantiles_1 <- c(q1.1, q2.1)
+
+q1.2 <- tanh(g(r_n.2) - (quantil/sqrt(n-3)))
+q2.2 <- tanh(g(r_n.2) + (quantil/sqrt(n-3)))
+cuantiles_2 <- c(q1.2, q2.2)
+
+q1.3 <- tanh(g(r_n.3) - (quantil/sqrt(n-3)))
+q2.3 <- tanh(g(r_n.3) + (quantil/sqrt(n-3)))
+cuantiles_3 <- c(q1.3, q2.3)
+
+```
+
+Donde $\rho$ sabemos que es:
+
+$$
+   \rho = \frac{Cov(X_n,y)}{\sigma_{X_{n}}\sigma_y}
+$$
+
+Por lo tanto, el intervalo de confianza generado para cada una de las X,
+serán los siguientes:
+
+### HighCol
+
+```{r}
+cuantiles_1
+```
+
+### Diabetes
+
+```{r}
+cuantiles_2
+```
+
+### GenHlth
+
+```{r}
+cuantiles_3
+```
+
+### {-}
+
+## Gráficos {.tabset}
+
+Ahora, para los gráficos utilizaremos boostrap para generarlos
+correspondientes a cada una de las $X_n$ elegidas.
+
+```{r}
+# Número de replicaciones bootstrap
+num_simulaciones <- 25000
+bootstrap_samples_1 <- numeric(num_simulaciones)
+bootstrap_samples_2 <- numeric(num_simulaciones)
+bootstrap_samples_3 <- numeric(num_simulaciones)
+
+for (i in 1:num_simulaciones) {
+  indices <- sample(1:n, n, replace = TRUE)
+  X_1_boot <- X_1[indices]
+  X_2_boot <- X_2[indices]
+  X_3_boot <- X_3[indices]
+  y_boot <- y[indices]
+  
+  bootstrap_samples_1[i] <- cor(X_1_boot, y_boot)
+  bootstrap_samples_2[i] <- cor(X_2_boot, y_boot)
+  bootstrap_samples_3[i] <- cor(X_3_boot, y_boot)
+}
+```
+
+Ahora los gráficos, según la variable tomada.
+
+### HighCol
+
+```{r}
+hist(bootstrap_samples_1, breaks = 30, main = "Distribución muestral según la variable HighCol", xlab = "Correlaciones")
+```
+
+### Diabetes
+
+```{r}
+hist(bootstrap_samples_2, breaks = 30, main = "Distribución muestral según la variable Diabetes", xlab = "Correlaciones")
+```
+
+### GenHlth
+
+```{r}
+hist(bootstrap_samples_3, breaks = 30, main = "Distribución muestral según la variable GenHlth", xlab = "Correlaciones")
+```
+
+### {-}
+
+## Prueba de normalidad para cada una de las distribuciones anteriores. {.tabset}
+
+Mediante el test de Anderson-Darling, la hipótesis nula es que la distribución es normal, y esta se rechaza en el caso de que $p < 0.05$. 
+
+Por lo tanto, al $p > 0.05$ se confirma que todas las distribuciones son normales al no poder rechazarse la hipótesis nula.
+
+### HighCol
+
+```{r}
+ad.test(bootstrap_samples_1)
+```
+
+### Diabetes
+
+```{r}
+ad.test(bootstrap_samples_2)
+```
+
+### GenHlth
+
+```{r}
+ad.test(bootstrap_samples_3)
+```
+
+
+
+### {-}
+
+
+
