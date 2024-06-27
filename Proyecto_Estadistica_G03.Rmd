@@ -1,0 +1,726 @@
+---
+title: "Estadistica"
+author: 
+- José Eduardo López Corella | C24343
+- Henri Gerard Gabert Hidalgo | B93096
+- Cristopher Gómez Valverde | B32927
+- Juan Pablo Morgan Sandí | C15319
+
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    theme: flatly
+    toc: yes
+    toc_float:
+      collapsed: true
+  extra_dependencies: ['amsmath', 'someotherpackage']
+---
+
+# Analisis descriptivo
+
+## Librerias utilizadas
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+```{r}
+df <- read_csv("data/heart_disease_health_indicators_BRFSS2015.csv")
+summary(df)
+```
+
+
+```{r}
+#Conteo nulos
+null_count <- colSums(is.na(df))
+print(null_count)
+```
+
+```{r}
+#Graficos de barras de variables del df
+df_long <- df %>%
+  gather(key = "variable", value = "value")
+
+variables <- unique(df_long$variable)
+
+# Generar gráficos para cada variable
+for (variable in variables) {
+  plot_data <- df_long[df_long$variable == variable, ]
+  p <- ggplot(data = plot_data) +
+    geom_bar(mapping = aes(x = value)) +
+    labs(title = paste("Gráfico para la variable:", variable)) +
+    theme_bw() 
+  print(p)
+}
+
+```
+
+
+```{r}
+library(corrplot)
+# Matriz de correlación
+correlation_matrix <- cor(df)
+corrplot(correlation_matrix, method = 'color', order = 'FPC', type = 'lower', diag = FALSE)
+```
+
+
+```{r}
+# Resumen Estadístico
+# Medidas de Tendencia Central para las columnas cuantitativas
+# Medias de cada columna cuantitativa
+media_BMI <- tapply(df$BMI,
+                    df$HeartDiseaseorAttack, mean)
+media_GenHlth <- tapply(df$GenHlth,
+                         df$HeartDiseaseorAttack, mean)
+media_Age <- tapply(df$Age,
+                     df$HeartDiseaseorAttack, mean)
+media_Income <- tapply(df$Income,
+                        df$HeartDiseaseorAttack, mean)
+
+# Mediana
+mediana_BMI <- tapply(df$BMI,
+                       df$HeartDiseaseorAttack, median)
+mediana_GenHlth <- tapply(df$GenHlth,
+                           df$HeartDiseaseorAttack, median)
+mediana_Age <- tapply(df$Age,
+                       df$HeartDiseaseorAttack, median)
+mediana_Income <- tapply(df$Income,
+                          df$HeartDiseaseorAttack, median)
+
+# Modas
+# Primero se define una función que calcule la moda
+calcular_modas <- function(x) {
+  frecuencias <- table(x)
+  frecuencias_maximas <- max(frecuencias)
+  modas <- as.numeric(names(frecuencias)[frecuencias == frecuencias_maximas])
+  return(modas)
+}
+# Modas
+moda_BMI <- tapply(df$BMI,
+                    df$HeartDiseaseorAttack, FUN = calcular_modas)
+moda_GenHlth <- tapply(df$GenHlth,
+                        df$HeartDiseaseorAttack, FUN = calcular_modas)
+moda_Age <- tapply(df$Age,
+                    df$HeartDiseaseorAttack, FUN = calcular_modas)
+moda_Income <- tapply(df$Income,
+                       df$HeartDiseaseorAttack, FUN = calcular_modas)
+
+# Máximo y mínimo
+max_BMI <- tapply(df$BMI,
+                   df$HeartDiseaseorAttack, max)
+max_GenHlth <- tapply(df$GenHlth,
+                       df$HeartDiseaseorAttack, max)
+max_Age <- tapply(df$Age,
+                   df$HeartDiseaseorAttack, max)
+max_Income <- tapply(df$Income,
+                      df$HeartDiseaseorAttack, max)
+
+min_BMI <- tapply(df$BMI,
+                   df$HeartDiseaseorAttack, min)
+min_GenHlth <- tapply(df$GenHlth,
+                       df$HeartDiseaseorAttack, min)
+min_Age <- tapply(df$Age,
+                   df$HeartDiseaseorAttack, min)
+min_Income <- tapply(df$Income,
+                      df$HeartDiseaseorAttack, min)
+
+# Medidas de Dispersión:
+# Desviación Estándar: La raíz cuadrada de la varianza.
+sd_BMI <- tapply(df$BMI,
+                  df$HeartDiseaseorAttack, sd)
+sd_GenHlth <- tapply(df$GenHlth,
+                      df$HeartDiseaseorAttack, sd)
+sd_Age <- tapply(df$Age,
+                  df$HeartDiseaseorAttack, sd)
+sd_Income <- tapply(df$Income,
+                     df$HeartDiseaseorAttack, sd)
+
+# Coeficiente de Variación: La desviación estándar dividida por la media.
+CV_BMI <- sd_BMI / media_BMI * 100
+CV_GenHlth <- sd_GenHlth / media_GenHlth * 100
+CV_Age <- sd_Age / media_Age * 100
+CV_Income <- sd_Income / media_Income * 100
+
+```
+
+## Tablas comparativas
+```{r}
+# Tabla resumen BMI
+tabla_resumen_BMI <- data.frame(BMI = c("Media", "Mediana", "Moda", "Maximo", "Minimo", "SD", "CV"), 
+                            "Sin_HDA" = c(media_BMI[1], mediana_BMI[1], moda_BMI[1], max_BMI[1],
+                                          min_BMI[1], sd_BMI[1],CV_BMI[1]),
+                            "Con_HDA" = c(media_BMI[2], mediana_BMI[2], moda_BMI[2], max_BMI[2],
+                                          min_BMI[2], sd_BMI[2], CV_BMI[2])
+                            )
+# Tabla resumen GenHlth
+tabla_resumen_GenHlth <- data.frame(GenHlth = c("Media", "Mediana", "Moda", "Maximo", "Minimo", "SD", 
+                                                "CV"), 
+                            "Sin_HDA" = c(media_GenHlth[1], mediana_GenHlth[1], moda_GenHlth[1],
+                                          max_GenHlth[1], min_GenHlth[1], sd_GenHlth[1], CV_GenHlth[1]),
+                            "Con_HDA" = c(media_GenHlth[2], mediana_GenHlth[2], moda_GenHlth[2],
+                                          max_GenHlth[2], min_GenHlth[2], sd_GenHlth[2], CV_GenHlth[2])
+                            )
+# Tabla resumen Age
+tabla_resumen_Age <- data.frame(Age = c("Media", "Mediana", "Moda", "Maximo", "Minimo", "SD", "CV"), 
+                            "Sin_HDA" = c(media_Age[1], mediana_Age[1], moda_Age[1],
+                                          max_Age[1], min_Age[1], sd_Age[1], CV_Age[1]),
+                            "Con_HDA" = c(media_Age[2], mediana_Age[2], moda_Age[2],
+                                          max_Age[2], min_Age[2], sd_Age[2], CV_Age[2])
+                            )
+# Tabla resumen Income
+tabla_resumen_Income <- data.frame(Income = c("Media", "Mediana", "Moda", "Maximo", "Minimo", "SD", "CV"),
+                            "Sin_HDA" = c(media_Income[1], mediana_Income[1], moda_Income[1],
+                                          max_Income[1], min_Income[1], sd_Income[1], CV_Income[1]),
+                            "Con_HDA" = c(media_Income[2], mediana_Income[2], moda_Income[2],
+                                          max_Income[2], min_Income[2], sd_Income[2], CV_Income[2])
+                            )
+```
+
+```{r}
+tabla_resumen_BMI
+```
+
+```{r}
+tabla_resumen_GenHlth 
+```
+
+```{r}
+tabla_resumen_Age
+```
+
+```{r}
+tabla_resumen_Income
+```
+
+## Gráficos de caja
+```{r}
+# Medidas de Posición:
+# Cuartiles y  boxplot
+boxplot(BMI ~ HeartDiseaseorAttack, df, 
+        main = "Diagrama de Caja para la variable BMI",
+        xlab = "BMI", horizontal = TRUE,
+        names = c("Sin H.D.A.", "Con H.D.A.")
+        )
+
+boxplot(GenHlth ~ HeartDiseaseorAttack, df, 
+        main = "Diagrama de Caja para la variable GenHlth",
+        xlab = "GenHlth", horizontal = TRUE,
+        names = c("Sin H.D.A.", "Con  H.D.A.")
+        )
+
+boxplot(Age ~ HeartDiseaseorAttack, df, 
+        main = "Diagrama de Caja para la variable Age",
+        xlab = "Age", horizontal = TRUE,
+        names = c("Sin  H.D.A.", "Con  H.D.A.")
+        )
+
+boxplot(Income ~ HeartDiseaseorAttack, df, 
+        main = "Diagrama de Caja para la variable Income",
+        xlab = "Income", horizontal = TRUE,
+        names = c("Sin  H.D.A.", "Con  H.D.A.")
+        )
+```
+
+# T test
+## Modelo
+Ajuste completo del modelo seleccionado. Mediantes comentarios se debe justificar como este resultado permite responder parcialmente o totalmente la pregunta de investigación.
+
+
+
+### Prueba t student (t-test) para BMI
+Para lograr el objetivo de encontrar influencia entre la variable BMI y la variable HeartDiseaseorAttack se realiza una prueba t student (t-test) para comparar si la media de del BMI de las personas que presentaron enfermedades del corazón o ataques cardiacos es mayor a la media en las personas que no presentaron esa condición.
+
+Se separan la data en dos grupos: + Grupo A: Personas con problemas del corazón. + Grupo B: Personas sin problemas del corazón.
+```{r}
+# Las hipotesis:
+# H_0: la media del BMI del grupo A es menor o igual a la media del grupo B. (m_A <= m_B)
+# H_1: la media del BMI del grupo A es mayor o a la media del grupo B.(m_A > m_B)
+grupo_A <- filter(df, HeartDiseaseorAttack == 1)
+grupo_A <- select(grupo_A,BMI)
+grupo_B <- filter(df, HeartDiseaseorAttack == 0)
+grupo_B <- select(grupo_B,BMI)
+
+# Realizar la prueba t de Student
+resultado <- t.test(grupo_A, grupo_B, alternative = "greater", var.equal = TRUE)
+
+# Mostrar los resultados
+print(resultado)
+
+
+# Interpretar el valor p
+if (resultado$p.value < 0.05) {
+  print("Rechazamos la hipótesis nula. La media del grupo A es significativamente mayor que la media del grupo B.")
+} else {
+  print("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que la media del grupo A es mayor que la media del grupo B.")
+}
+```
+### Prueba t student (t-test) para GenHlth
+Se prueba si la media de la calificación de la salud en general del grupo A es menor a la del Grupo B (grupos definidos anteriormente).
+```{r}
+# Las hipotesis:
+# H_0: la media del GenHlth del grupo A es menor o igual a la GenHlth del grupo B. 
+# H_1: la media del GenHlth del grupo A es mayor o a la GenHlth del grupo B.
+grupo_A <- filter(df, HeartDiseaseorAttack == 1)
+grupo_A <- select(grupo_A,GenHlth)
+grupo_B <- filter(df, HeartDiseaseorAttack == 0)
+grupo_B <- select(grupo_B,GenHlth)
+
+# Realizar la prueba t de Student
+resultado <- t.test(grupo_A, grupo_B, alternative = "greater", var.equal = TRUE)
+
+# Mostrar los resultados
+print(resultado)
+
+# Interpretar el valor p
+if (resultado$p.value < 0.05) {
+  print("Rechazamos la hipótesis nula. La media del grupo A es significativamente mayor que la media del grupo B.")
+} else {
+  print("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que la media del grupo A es mayor que la media del grupo B.")
+}
+```
+
+### Prueba t student (t-test) para Age
+Se prueba si la media de la edad del grupo A es menor a la del Grupo B (grupos definidos anteriormente).
+```{r}
+# Las hipotesis:
+# H_0: la media del Age del grupo A es menor o igual a la Age del grupo B. 
+# H_1: la media del Age  del grupo A es mayor o a la Age  del grupo B.
+grupo_A <- filter(df, HeartDiseaseorAttack == 1)
+grupo_A <- select(grupo_A,Age)
+grupo_B <- filter(df, HeartDiseaseorAttack == 0)
+grupo_B <- select(grupo_B,Age)
+
+# Realizar la prueba t de Student
+resultado <- t.test(grupo_A, grupo_B, alternative = "greater", var.equal = TRUE)
+
+# Mostrar los resultados
+print(resultado)
+
+
+# Interpretar el valor p
+if (resultado$p.value < 0.05) {
+  print("Rechazamos la hipótesis nula. La media del grupo A es significativamente mayor que la media del grupo B.")
+} else {
+  print("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que la media del grupo A es mayor que la media del grupo B.")
+}
+```
+
+### Prueba t student (t-test) para Income
+Se prueba si la media de ingresos del grupo A es menor a la del Grupo B (grupos definidos anteriormente).
+```{r}
+# Las hipotesis:
+# H_0: la media del Income del grupo A es menor o igual a la Income del grupo B. 
+# H_1: la media del Income  del grupo A es mayor o a la Income  del grupo B.
+grupo_A <- filter(df, HeartDiseaseorAttack == 1)
+grupo_A <- select(grupo_A,Income)
+grupo_B <- filter(df, HeartDiseaseorAttack == 0)
+grupo_B <- select(grupo_B,Income)
+
+# Realizar la prueba t de Student
+resultado <- t.test(grupo_A, grupo_B, alternative = "greater", var.equal = TRUE)
+
+# Mostrar los resultados
+print(resultado)
+
+# Interpretar el valor p
+if (resultado$p.value < 0.05) {
+  print("Rechazamos la hipótesis nula. La media del grupo A es significativamente mayor que la media del grupo B.")
+} else {
+  print("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que la media del grupo A es mayor que la media del grupo B.")
+}
+```
+### Resumen de resultados y aportes a la pregunta
+1. La media del BIM de las personas que sufren enfermedades del corazón es significativamente mayor que la media del las personas que no sufren enfermedades del corazon. Este resultado sugiere que existe una asociación entre el índice de masa corporal (BMI) y las enfermedades del corazón. Lo que indica que la condición física y los hábitos relacionados con el peso pueden influir en el desarrollo de enfermedades cardíacas.
+
+2. La media del la “salud en general” de las personas que sufren enfermedades del corazón es significativamente mayor que la media de las que no sufren enfermedades del corazón. Este resultado sugiere que las personas con enfermedades cardíacas tienden a pensar que tiene buena salud en general.
+
+3. La media del grupo de edad de las personas que sufren enfermedades del corazón es significativamente mayor que la media de las que no sufren enfermedades del corazón. Este resultado sugiere que el desarrollo de enfermedades cardiacas se da más en personas adultas que en jóvenes. este resultado respalda la idea de que la edad es un factor importante.
+
+4. No hay suficiente evidencia para afirmar que la media del de los ingresos del las personas que sufren enfermedades del corazón es mayor que la media de las que no sufren enfermedades del corazón. Este resultado no permite establecer alguna relación entre enfermedades cardiacas y el ingreso de las personas.
+
+
+# Chi cuadrado y  V de Cramer
+
+## Importación de paquetes
+```{r}
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(stats)
+library(corrplot)
+```
+
+
+```{r}
+correlation_matrix <- cor(df)
+corrplot(correlation_matrix, method = 'color', order = 'FPC', type = 'lower', diag = FALSE,
+          tl.cex = 0.8, # Tamaño de las etiquetas de texto
+         cl.cex = 0.8, # Tamaño de la leyenda de colores
+         number.cex = 0.7) # Tamaño de los números de correlación
+```
+
+Al observar el gráfico de correlación se ve la relación lineal entre dos variables, es decir si existe una relación en la que una variable cambia en proporción constante con respecto a la otra, que una suba implica que la otra suba, que una baje implica que la otra baje cuando hablamos de correlación positiva, sin embargo le negativa es que hagan lo contrario es decir si una sube  la otra baja, etc.
+
+Sin embargo como logramos apreciar no existe mucha correlación con las variables del data frame, por lo que vamos a realizar pruebas de hipótesis para ver si del todo no tienen relación o si existe dependencia entre ellas.
+
+### Desarrollo
+Se innovó el código, apesar de que la idea es la misma se utilizaron funciones para realizar algunos procesos de forma automatizada, tomadas tanto de la referencia anteriormente adjuntada, como de las notas del curso Estadística I del PhD Maikol Solís.
+En lo que respecta a las pruebas de hipótesis Chi-cuadrado, para realizar el proceso de forma automatizado realizamos un ciclo y fuimos creando tablas de contingencias en las que asociamos cada variable con la columna HeartDiseasorAttack.
+
+La prueba de chi-cuadrado se utiliza para encontrar si existe depenencia o no con las variables que poseemos, además es usada con variables categóricas de 2 o más categorías, por lo que es ideal para la mayoría de nuestras variables, depués de tener nuestras tablas de contingencias, utilizando un método de vectorización aplicamos la función chisq.test() del paquete stats a todas las tablas de contingencias realizadas.
+
+Según las notas del curso para estas pruebas la hipótesis nula es que las dos variables son independientes.
+
+
+
+```{r}
+# Instalar el paquete confintr y ggplot2 si no están instalados
+if (!require(confintr)) {
+  install.packages("confintr")
+  library(confintr)
+}
+
+if (!require(ggplot2)) {
+  install.packages("ggplot2")
+  library(ggplot2)
+}
+
+df <- df %>% mutate(across(-HeartDiseaseorAttack, as.factor))
+
+variables <- colnames(df)[colnames(df) != "HeartDiseaseorAttack"]
+
+# Data frame para almacenar los resultados
+resultados <- data.frame(Variable = character(), CramersV = numeric(), stringsAsFactors = FALSE)
+
+# Realizar pruebas chi-cuadrado de Pearson para cada variable y calcular V de Cramer
+for (variable in variables) {
+  tabla <- table(df[[variable]], df$HeartDiseaseorAttack)
+  
+  resultado <- chisq.test(tabla)
+  
+  cat("Resultados para la variable:", variable, "\n")
+  print(resultado)
+  
+  if (resultado$p.value < 0.05) {
+    cat("Rechazamos la hipótesis nula. Hay una relación estadísticamente significativa entre", variable, "y HeartDiseaseorAttack.\n\n")
+  } else {
+    cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadísticamente significativa entre", variable, "y HeartDiseaseorAttack.\n\n")
+  }
+  
+  # Calcular V de Cramer
+  cramer_v <- cramersv(tabla)
+  cat("El valor de V de Cramer para la variable", variable, "es:", cramer_v, "\n\n")
+  
+  resultados <- rbind(resultados, data.frame(Variable = variable, CramersV = cramer_v))
+}
+
+
+```
+```{r}
+ggplot(resultados, aes(x = CramersV, y = reorder(Variable, CramersV))) +
+  geom_bar(stat = "identity", fill = "#1D3A71") +
+  labs(title = "V de Cramer para cada variable",
+       x = "V de Cramer",
+       y = "Variable") +
+  theme_minimal()
+```
+
+Depués de observar los P-Value resultantes, nos damos cuenta que a pesar de poseer un X-squared disitinto o tener distintos grados de libertad, todas poseen p-value<2.2e-16 por lo tanto rechazamos la hipotesis nula y por tanto hay dependencia, además los Warning: Chi-squared approximation may be incorrect, son completamente normales dado que son las variables no categóricas del data frame.
+
+## Columnas de base
+```{r}
+colnames(df)
+```
+Daso que se pudo comprobar la independencia individual, se realizó una agrupación de variables para observar si estas al estar agrupadas también mantendrían dependencia 
+
+## Creación de columnas nuevas y repetir proceso
+
+```{r}
+if (!require(dplyr)) {
+  install.packages("dplyr")
+  library(dplyr)
+}
+
+# Creación de columnas nuevas
+df <- df %>%
+  mutate(High_Chol_BP = case_when(
+    HighChol == 0 & HighBP == 0 ~ 0,
+    HighChol == 1 & HighBP == 1 ~ 1,
+    HighChol == 1 & HighBP == 0 ~ 2,
+    HighChol == 0 & HighBP == 1 ~ 3
+  ))
+
+df <- df %>%
+  mutate(Stroke_DiffWalk = case_when(
+    Stroke == 0 & DiffWalk == 0 ~ 0,
+    Stroke == 1 & DiffWalk == 1 ~ 1,
+    Stroke == 1 & DiffWalk == 0 ~ 2,
+    Stroke == 0 & DiffWalk == 1 ~ 3
+  ))
+
+# Data frame para almacenar los resultados de las agrupaciones
+resultados_agrupaciones <- data.frame(Variable = character(), CramersV = numeric(), stringsAsFactors = FALSE)
+
+# Pruebas chi-cuadrado y cálculo de V de Cramer para High_Chol_BP
+Data_HeartDisease_CholBP <- table(df$HeartDiseaseorAttack, df$High_Chol_BP)
+resultado_CholBP <- chisq.test(x = Data_HeartDisease_CholBP)
+cat("Resultados para la variable:", "High_Chol_BP", "\n")
+print(resultado_CholBP)
+if (resultado_CholBP$p.value < 0.05) {
+  cat("Rechazamos la hipótesis nula. Hay una relación estadísticamente significativa entre", "High_Chol_BP", "y HeartDiseaseorAttack.\n\n")
+} else {
+  cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadísticamente significativa entre", "High_Chol_BP", "y HeartDiseaseorAttack.\n\n")
+}
+cramer_v_CholBP <- cramersv(Data_HeartDisease_CholBP)
+cat("El valor de V de Cramer para la variable", "High_Chol_BP", "es:", cramer_v_CholBP, "\n\n")
+resultados_agrupaciones <- rbind(resultados_agrupaciones, data.frame(Variable = "High_Chol_BP", CramersV = cramer_v_CholBP))
+
+# Pruebas chi-cuadrado y cálculo de V de Cramer para Stroke_DiffWalk
+Data_HeartDisease_Stroke_DiffWalk <- table(df$HeartDiseaseorAttack, df$Stroke_DiffWalk)
+resultadoStrokeDiff <- chisq.test(x = Data_HeartDisease_Stroke_DiffWalk)
+cat("Resultados para la variable:", "Stroke_DiffWalk", "\n")
+print(resultadoStrokeDiff)
+if (resultadoStrokeDiff$p.value < 0.05) {
+  cat("Rechazamos la hipótesis nula. Hay una relación estadísticamente significativa entre", "Stroke_DiffWalk", "y HeartDiseaseorAttack.\n\n")
+} else {
+  cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadísticamente significativa entre", "Stroke_DiffWalk", "y HeartDiseaseorAttack.\n\n")
+}
+cramer_v_StrokeDiff <- cramersv(Data_HeartDisease_Stroke_DiffWalk)
+cat("El valor de V de Cramer para la variable", "Stroke_DiffWalk", "es:", cramer_v_StrokeDiff, "\n\n")
+resultados_agrupaciones <- rbind(resultados_agrupaciones, data.frame(Variable = "Stroke_DiffWalk", CramersV = cramer_v_StrokeDiff))
+
+# Crear gráfico de barras horizontal para las agrupaciones
+ggplot(resultados_agrupaciones, aes(x = CramersV, y = reorder(Variable, CramersV))) +
+  geom_bar(stat = "identity", fill = "#212274") +
+  labs(title = "V de Cramer para agrupación de columnas",
+       x = "V de Cramer",
+       y = "Variable") +
+  theme_minimal()
+
+```
+Una vez más realizamos las correlaciones para observar si con las dos nuevas columnas tiene una relación más fuerte como lo es la lineal o solo existe dependencia pero no lineal entre ellas y esto ultimo fue lo concluido.
+
+
+
+# Método Delta
+
+## Librerias
+
+```{r message=FALSE}
+library(propagate)
+library(car)
+library(readr)
+library(dplyr)
+library(MASS)
+library(nortest)
+```
+
+### Lectura de la base de datos
+
+```{r message=FALSE, warning=FALSE}
+Data_HeartDiseases <- read_csv("heart_disease_health_indicators_BRFSS2015.csv")
+```
+
+## Método.
+
+Este caso es con las variables HighCol, Diabetes y GenHlth.
+
+```{r}
+# Variables predictorias.
+X_1 <- Data_HeartDiseases$HighChol
+X_2 <- Data_HeartDiseases$Diabetes
+X_3 <- Data_HeartDiseases$GenHlth
+
+# Numero de la muestra.
+n <- nrow(Data_HeartDiseases)
+
+# Variable a predecir.
+y <- Data_HeartDiseases$HeartDiseaseorAttack
+
+# Coeficiente de correlación de cada una de las Xn respecto a y.
+r_n.1 <- cor(X_1, y)
+r_n.2 <- cor(X_2, y)
+r_n.3 <- cor(X_3, y)
+
+```
+
+El método delta se define como:
+
+$$
+\frac{\sqrt n[g (r_n) - g(\rho)]}{g'(\rho) (1-\rho^2)} \rightarrow N(0,1)
+$$ 
+
+
+Con $g(\rho)$ aún desconocida.
+
+Entonces, para encontrar dicha función, tenemos:
+
+$$
+g'(\rho) \cdot (1-\rho^{2}) = 1
+$$ 
+
+Es decir, que tenemos despejando:
+
+$$
+g(\rho) = \int \frac{1}{1-\rho^{2}}d\rho = arctanh(\rho)
+$$
+
+Por lo tanto, se define a la función g de forma tal que:
+
+```{r}
+# se define la función g(θ) tal que: g(θ) = arctanh(θ)
+g <- function(x) atanh(x)
+```
+
+Utilizando la función g encontrada anteriormente, tenemos entonces: 
+$$
+  \frac{\sqrt n[arctanh(r_n) - arctanh(\rho)]}{arctanh'(\rho){(1-\rho^2)}} \rightarrow N(0,1)
+$$
+
+Donde vea que el denominador se cancela debido a que son el mismo valor.
+
+Por lo tanto, observe que tenemos: 
+$$
+  -z_{1-\frac{\alpha}{2}} < \sqrt n[arctanh(r_n) - arctanh(\rho)] < z_{1-\frac{\alpha}{2}}
+$$ 
+
+## Intervalos de Confianza. {.tabset}
+
+Por lo tanto, tenemos, que el intervalo debe ser: 
+$$
+  tanh(arctanh(r_n) - \frac{z_{1-\frac{\alpha}{2}}}{\sqrt n}) < \rho < tanh(arctanh(r_n) + \frac{z_{1-\frac{\alpha}{2}}}{\sqrt n})
+$$ 
+
+Donde sabemos que $\alpha = 0.05$, entonces los cuantiles son de la
+siguiente forma:
+
+```{r}
+alpha <- 0.05
+quantil <- qnorm(1-alpha / 2)
+```
+
+Entonces, calculamos cada extremo de los intervalos de confianza.
+
+```{r}
+q1.1 <- tanh(g(r_n.1) - (quantil/sqrt(n-3)))
+q2.1 <- tanh(g(r_n.1) + (quantil/sqrt(n-3)))
+cuantiles_1 <- c(q1.1, q2.1)
+
+q1.2 <- tanh(g(r_n.2) - (quantil/sqrt(n-3)))
+q2.2 <- tanh(g(r_n.2) + (quantil/sqrt(n-3)))
+cuantiles_2 <- c(q1.2, q2.2)
+
+q1.3 <- tanh(g(r_n.3) - (quantil/sqrt(n-3)))
+q2.3 <- tanh(g(r_n.3) + (quantil/sqrt(n-3)))
+cuantiles_3 <- c(q1.3, q2.3)
+
+```
+
+Donde $\rho$ sabemos que es:
+
+$$
+   \rho = \frac{Cov(X_n,y)}{\sigma_{X_{n}}\sigma_y}
+$$
+
+Por lo tanto, el intervalo de confianza generado para cada una de las X,
+serán los siguientes:
+
+### HighCol
+
+```{r}
+cuantiles_1
+```
+
+### Diabetes
+
+```{r}
+cuantiles_2
+```
+
+### GenHlth
+
+```{r}
+cuantiles_3
+```
+
+### {-}
+
+## Gráficos {.tabset}
+
+Ahora, para los gráficos utilizaremos boostrap para generarlos
+correspondientes a cada una de las $X_n$ elegidas.
+
+```{r}
+# Número de replicaciones bootstrap
+num_simulaciones <- 25000
+bootstrap_samples_1 <- numeric(num_simulaciones)
+bootstrap_samples_2 <- numeric(num_simulaciones)
+bootstrap_samples_3 <- numeric(num_simulaciones)
+
+for (i in 1:num_simulaciones) {
+  indices <- sample(1:n, n, replace = TRUE)
+  X_1_boot <- X_1[indices]
+  X_2_boot <- X_2[indices]
+  X_3_boot <- X_3[indices]
+  y_boot <- y[indices]
+  
+  bootstrap_samples_1[i] <- cor(X_1_boot, y_boot)
+  bootstrap_samples_2[i] <- cor(X_2_boot, y_boot)
+  bootstrap_samples_3[i] <- cor(X_3_boot, y_boot)
+}
+```
+
+Ahora los gráficos, según la variable tomada.
+
+### HighCol
+
+```{r}
+hist(bootstrap_samples_1, breaks = 30, main = "Distribución muestral según la variable HighCol", xlab = "Correlaciones")
+```
+
+### Diabetes
+
+```{r}
+hist(bootstrap_samples_2, breaks = 30, main = "Distribución muestral según la variable Diabetes", xlab = "Correlaciones")
+```
+
+### GenHlth
+
+```{r}
+hist(bootstrap_samples_3, breaks = 30, main = "Distribución muestral según la variable GenHlth", xlab = "Correlaciones")
+```
+
+### {-}
+
+## Prueba de normalidad para cada una de las distribuciones anteriores. {.tabset}
+
+Mediante el test de Anderson-Darling, la hipótesis nula es que la distribución es normal, y esta se rechaza en el caso de que $p < 0.05$. 
+
+Por lo tanto, al $p > 0.05$ se confirma que todas las distribuciones son normales al no poder rechazarse la hipótesis nula.
+
+### HighCol
+
+```{r}
+ad.test(bootstrap_samples_1)
+```
+
+### Diabetes
+
+```{r}
+ad.test(bootstrap_samples_2)
+```
+
+### GenHlth
+
+```{r}
+ad.test(bootstrap_samples_3)
+```
+
+
+
+### {-}
+
+
+
