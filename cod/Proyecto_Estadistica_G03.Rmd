@@ -372,15 +372,23 @@ Según las notas del curso para estas pruebas la hipótesis nula es que las dos 
 
 
 ```{r}
-# Instalar el paquete confintr si no está instalado
+# Instalar el paquete confintr y ggplot2 si no están instalados
 if (!require(confintr)) {
   install.packages("confintr")
   library(confintr)
 }
 
+if (!require(ggplot2)) {
+  install.packages("ggplot2")
+  library(ggplot2)
+}
+
 df <- df %>% mutate(across(-HeartDiseaseorAttack, as.factor))
 
 variables <- colnames(df)[colnames(df) != "HeartDiseaseorAttack"]
+
+# Data frame para almacenar los resultados
+resultados <- data.frame(Variable = character(), CramersV = numeric(), stringsAsFactors = FALSE)
 
 # Realizar pruebas chi-cuadrado de Pearson para cada variable y calcular V de Cramer
 for (variable in variables) {
@@ -392,16 +400,29 @@ for (variable in variables) {
   print(resultado)
   
   if (resultado$p.value < 0.05) {
-    cat("Rechazamos la hipótesis nula. Hay una relación estadisticamente significativa entre", variable, "y HeartDiseaseorAttack.\n\n")
+    cat("Rechazamos la hipótesis nula. Hay una relación estadísticamente significativa entre", variable, "y HeartDiseaseorAttack.\n\n")
   } else {
-    cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadisticamente significativa entre", variable, "y HeartDiseaseorAttack.\n\n")
+    cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadísticamente significativa entre", variable, "y HeartDiseaseorAttack.\n\n")
   }
   
   # Calcular V de Cramer
   cramer_v <- cramersv(tabla)
   cat("El valor de V de Cramer para la variable", variable, "es:", cramer_v, "\n\n")
+  
+  resultados <- rbind(resultados, data.frame(Variable = variable, CramersV = cramer_v))
 }
+
+
 ```
+```{r}
+ggplot(resultados, aes(x = CramersV, y = reorder(Variable, CramersV))) +
+  geom_bar(stat = "identity", fill = "#1D3A71") +
+  labs(title = "V de Cramer para cada variable",
+       x = "V de Cramer",
+       y = "Variable") +
+  theme_minimal()
+```
+
 Depués de observar los P-Value resultantes, nos damos cuenta que a pesar de poseer un X-squared disitinto o tener distintos grados de libertad, todas poseen p-value<2.2e-16 por lo tanto rechazamos la hipotesis nula y por tanto hay dependencia, además los Warning: Chi-squared approximation may be incorrect, son completamente normales dado que son las variables no categóricas del data frame.
 
 ## Columnas de base
@@ -413,6 +434,11 @@ Daso que se pudo comprobar la independencia individual, se realizó una agrupaci
 ## Creación de columnas nuevas y repetir proceso
 
 ```{r}
+if (!require(dplyr)) {
+  install.packages("dplyr")
+  library(dplyr)
+}
+
 # Creación de columnas nuevas
 df <- df %>%
   mutate(High_Chol_BP = case_when(
@@ -430,30 +456,45 @@ df <- df %>%
     Stroke == 0 & DiffWalk == 1 ~ 3
   ))
 
-# Repetir el proceso para agrupaciones
+# Data frame para almacenar los resultados de las agrupaciones
+resultados_agrupaciones <- data.frame(Variable = character(), CramersV = numeric(), stringsAsFactors = FALSE)
+
+# Pruebas chi-cuadrado y cálculo de V de Cramer para High_Chol_BP
 Data_HeartDisease_CholBP <- table(df$HeartDiseaseorAttack, df$High_Chol_BP)
 resultado_CholBP <- chisq.test(x = Data_HeartDisease_CholBP)
 cat("Resultados para la variable:", "High_Chol_BP", "\n")
 print(resultado_CholBP)
 if (resultado_CholBP$p.value < 0.05) {
-  cat("Rechazamos la hipótesis nula. Hay una relación estadisticamente significativa entre", "High_Chol_BP", "y HeartDiseaseorAttack.\n\n")
+  cat("Rechazamos la hipótesis nula. Hay una relación estadísticamente significativa entre", "High_Chol_BP", "y HeartDiseaseorAttack.\n\n")
 } else {
-  cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadisticamente significativa entre", "High_Chol_BP", "y HeartDiseaseorAttack.\n\n")
+  cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadísticamente significativa entre", "High_Chol_BP", "y HeartDiseaseorAttack.\n\n")
 }
 cramer_v_CholBP <- cramersv(Data_HeartDisease_CholBP)
 cat("El valor de V de Cramer para la variable", "High_Chol_BP", "es:", cramer_v_CholBP, "\n\n")
+resultados_agrupaciones <- rbind(resultados_agrupaciones, data.frame(Variable = "High_Chol_BP", CramersV = cramer_v_CholBP))
 
+# Pruebas chi-cuadrado y cálculo de V de Cramer para Stroke_DiffWalk
 Data_HeartDisease_Stroke_DiffWalk <- table(df$HeartDiseaseorAttack, df$Stroke_DiffWalk)
 resultadoStrokeDiff <- chisq.test(x = Data_HeartDisease_Stroke_DiffWalk)
 cat("Resultados para la variable:", "Stroke_DiffWalk", "\n")
 print(resultadoStrokeDiff)
 if (resultadoStrokeDiff$p.value < 0.05) {
-  cat("Rechazamos la hipótesis nula. Hay una relación estadisticamente significativa entre", "Stroke_DiffWalk", "y HeartDiseaseorAttack.\n\n")
+  cat("Rechazamos la hipótesis nula. Hay una relación estadísticamente significativa entre", "Stroke_DiffWalk", "y HeartDiseaseorAttack.\n\n")
 } else {
-  cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadisticamente significativa entre", "Stroke_DiffWalk", "y HeartDiseaseorAttack.\n\n")
+  cat("No rechazamos la hipótesis nula. No hay suficiente evidencia para afirmar que hay una relación estadísticamente significativa entre", "Stroke_DiffWalk", "y HeartDiseaseorAttack.\n\n")
 }
 cramer_v_StrokeDiff <- cramersv(Data_HeartDisease_Stroke_DiffWalk)
 cat("El valor de V de Cramer para la variable", "Stroke_DiffWalk", "es:", cramer_v_StrokeDiff, "\n\n")
+resultados_agrupaciones <- rbind(resultados_agrupaciones, data.frame(Variable = "Stroke_DiffWalk", CramersV = cramer_v_StrokeDiff))
+
+# Crear gráfico de barras horizontal para las agrupaciones
+ggplot(resultados_agrupaciones, aes(x = CramersV, y = reorder(Variable, CramersV))) +
+  geom_bar(stat = "identity", fill = "#212274") +
+  labs(title = "V de Cramer para agrupación de columnas",
+       x = "V de Cramer",
+       y = "Variable") +
+  theme_minimal()
+
 ```
 Una vez más realizamos las correlaciones para observar si con las dos nuevas columnas tiene una relación más fuerte como lo es la lineal o solo existe dependencia pero no lineal entre ellas y esto ultimo fue lo concluido.
 
