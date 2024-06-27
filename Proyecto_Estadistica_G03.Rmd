@@ -16,18 +16,13 @@ output:
   extra_dependencies: ['amsmath', 'someotherpackage']
 ---
 
-# Analisis descriptivo
-
-## Librerias utilizadas
-```{r}
-library(readr)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
+```{r message=FALSE}
+source("cod/setup.R")
 ```
 
+# Analisis descriptivo
+
 ```{r}
-df <- read_csv("data/heart_disease_health_indicators_BRFSS2015.csv")
 summary(df)
 ```
 
@@ -56,15 +51,6 @@ for (variable in variables) {
 }
 
 ```
-
-
-```{r}
-library(corrplot)
-# Matriz de correlación
-correlation_matrix <- cor(df)
-corrplot(correlation_matrix, method = 'color', order = 'FPC', type = 'lower', diag = FALSE)
-```
-
 
 ```{r}
 # Resumen Estadístico
@@ -224,9 +210,9 @@ boxplot(Income ~ HeartDiseaseorAttack, df,
 ```
 
 # T test
+
 ## Modelo
 Ajuste completo del modelo seleccionado. Mediantes comentarios se debe justificar como este resultado permite responder parcialmente o totalmente la pregunta de investigación.
-
 
 
 ### Prueba t student (t-test) para BMI
@@ -343,15 +329,7 @@ if (resultado$p.value < 0.05) {
 
 # Chi cuadrado y  V de Cramer
 
-## Importación de paquetes
-```{r}
-library(readr)
-library(tidyverse)
-library(ggplot2)
-library(stats)
-library(corrplot)
-```
-
+## Correlacion
 
 ```{r}
 correlation_matrix <- cor(df)
@@ -365,7 +343,7 @@ Al observar el gráfico de correlación se ve la relación lineal entre dos vari
 
 Sin embargo como logramos apreciar no existe mucha correlación con las variables del data frame, por lo que vamos a realizar pruebas de hipótesis para ver si del todo no tienen relación o si existe dependencia entre ellas.
 
-### Desarrollo
+## Desarrollo
 Se innovó el código, apesar de que la idea es la misma se utilizaron funciones para realizar algunos procesos de forma automatizada, tomadas tanto de la referencia anteriormente adjuntada, como de las notas del curso Estadística I del PhD Maikol Solís.
 En lo que respecta a las pruebas de hipótesis Chi-cuadrado, para realizar el proceso de forma automatizado realizamos un ciclo y fuimos creando tablas de contingencias en las que asociamos cada variable con la columna HeartDiseasorAttack.
 
@@ -376,16 +354,7 @@ Según las notas del curso para estas pruebas la hipótesis nula es que las dos 
 
 
 ```{r}
-# Instalar el paquete confintr y ggplot2 si no están instalados
-if (!require(confintr)) {
-  install.packages("confintr")
-  library(confintr)
-}
 
-if (!require(ggplot2)) {
-  install.packages("ggplot2")
-  library(ggplot2)
-}
 
 df <- df %>% mutate(across(-HeartDiseaseorAttack, as.factor))
 
@@ -438,11 +407,6 @@ Daso que se pudo comprobar la independencia individual, se realizó una agrupaci
 ## Creación de columnas nuevas y repetir proceso
 
 ```{r}
-if (!require(dplyr)) {
-  install.packages("dplyr")
-  library(dplyr)
-}
-
 # Creación de columnas nuevas
 df <- df %>%
   mutate(High_Chol_BP = case_when(
@@ -500,28 +464,13 @@ ggplot(resultados_agrupaciones, aes(x = CramersV, y = reorder(Variable, CramersV
   theme_minimal()
 
 ```
+
 Una vez más realizamos las correlaciones para observar si con las dos nuevas columnas tiene una relación más fuerte como lo es la lineal o solo existe dependencia pero no lineal entre ellas y esto ultimo fue lo concluido.
 
 
 
 # Método Delta
-
-## Librerias
-
-```{r message=FALSE}
-library(propagate)
-library(car)
-library(readr)
-library(dplyr)
-library(MASS)
-library(nortest)
-```
-
-### Lectura de la base de datos
-
-```{r message=FALSE, warning=FALSE}
-Data_HeartDiseases <- read_csv("heart_disease_health_indicators_BRFSS2015.csv")
-```
+`
 
 ## Método.
 
@@ -529,15 +478,15 @@ Este caso es con las variables HighCol, Diabetes y GenHlth.
 
 ```{r}
 # Variables predictorias.
-X_1 <- Data_HeartDiseases$HighChol
-X_2 <- Data_HeartDiseases$Diabetes
-X_3 <- Data_HeartDiseases$GenHlth
+X_1 <- as.numeric(df$HighChol)
+X_2 <- as.numeric(df$Diabetes)
+X_3 <- as.numeric(df$GenHlth)
 
 # Numero de la muestra.
-n <- nrow(Data_HeartDiseases)
+n <- nrow(df)
 
 # Variable a predecir.
-y <- Data_HeartDiseases$HeartDiseaseorAttack
+y <- df$HeartDiseaseorAttack
 
 # Coeficiente de correlación de cada una de las Xn respecto a y.
 r_n.1 <- cor(X_1, y)
@@ -618,12 +567,6 @@ cuantiles_3 <- c(q1.3, q2.3)
 
 ```
 
-Donde $\rho$ sabemos que es:
-
-$$
-   \rho = \frac{Cov(X_n,y)}{\sigma_{X_{n}}\sigma_y}
-$$
-
 Por lo tanto, el intervalo de confianza generado para cada una de las X,
 serán los siguientes:
 
@@ -677,19 +620,40 @@ Ahora los gráficos, según la variable tomada.
 ### HighCol
 
 ```{r}
-hist(bootstrap_samples_1, breaks = 30, main = "Distribución muestral según la variable HighCol", xlab = "Correlaciones")
+ggplot(data = NULL, aes(x = bootstrap_samples_1)) +
+  geom_histogram(bins = 30, fill = "#717DC2", color = "black") +
+  labs(title = "Distribución de la correlación según la variable HighCol",
+       x = "Correlación",
+       y = "Frecuencia") +
+      theme(plot.title = element_text(hjust = 0.5)) + 
+      theme(panel.background = element_rect(fill = "transparent", color = NA)) +
+      geom_vline(xintercept = cuantiles_1, linetype = "dashed", color = "red", linewidth = 1)
 ```
 
 ### Diabetes
 
 ```{r}
-hist(bootstrap_samples_2, breaks = 30, main = "Distribución muestral según la variable Diabetes", xlab = "Correlaciones")
+ggplot(data = NULL, aes(x = bootstrap_samples_2)) +
+  geom_histogram(bins = 30, fill = "#717DC2", color = "black") +
+  labs(title = "Distribución de la correlación según la variable Diabetes",
+       x = "Correlación",
+       y = "Frecuencia") +
+      theme(plot.title = element_text(hjust = 0.5)) + 
+      theme(panel.background = element_rect(fill = "transparent", color = NA)) +
+      geom_vline(xintercept = cuantiles_2, linetype = "dashed", color = "red", linewidth = 1)
 ```
 
 ### GenHlth
 
 ```{r}
-hist(bootstrap_samples_3, breaks = 30, main = "Distribución muestral según la variable GenHlth", xlab = "Correlaciones")
+ggplot(data = NULL, aes(x = bootstrap_samples_3)) +
+  geom_histogram(bins = 30, fill = "#717DC2", color = "black") +
+  labs(title = "Distribución de la correlación según la variable GenHlth",
+       x = "Correlación",
+       y = "Frecuencia") +
+      theme(plot.title = element_text(hjust = 0.5)) + 
+      theme(panel.background = element_rect(fill = "transparent", color = NA)) +
+      geom_vline(xintercept = cuantiles_3, linetype = "dashed", color = "red", linewidth = 1) 
 ```
 
 ### {-}
